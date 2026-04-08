@@ -519,9 +519,9 @@ BEGRÜNDUNG: Warum wurde genau diese Antwort gewählt — welche Argumente haben
 
 // ── SETUP ──
 function loadKeys() {
-    keys.A = localStorage.getItem('colLabor_keyA') || '';
-    keys.B = localStorage.getItem('colLabor_keyB') || '';
-    keys.C = localStorage.getItem('colLabor_keyC') || '';
+    keys.A = localStorage.getItem('colLab_keyA') || '';
+    keys.B = localStorage.getItem('colLab_keyB') || '';
+    keys.C = localStorage.getItem('colLab_keyC') || '';
     if (keys.A || keys.B || keys.C) {
         document.getElementById('keyA').value = keys.A;
         document.getElementById('keyB').value = keys.B;
@@ -536,9 +536,9 @@ function saveKeys() {
     const c = document.getElementById('keyC').value.trim();
     if (!a || !b || !c) { alert('Bitte alle drei API-Keys eingeben.'); return; }
     keys.A = a; keys.B = b; keys.C = c;
-    localStorage.setItem('colLabor_keyA', a);
-    localStorage.setItem('colLabor_keyB', b);
-    localStorage.setItem('colLabor_keyC', c);
+    localStorage.setItem('colLab_keyA', a);
+    localStorage.setItem('colLab_keyB', b);
+    localStorage.setItem('colLab_keyC', c);
     hideOverlay();
 }
 
