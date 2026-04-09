@@ -730,7 +730,7 @@ async function startColLAB() {
     stopThinking();
 
      // ── SYNTHESE durch Haiku ──
-    addLog('SYS', 'Synthese wird erstellt…');
+    
     document.getElementById('progressStatus').textContent = 'Synthese läuft…';
 
     const synthesisInput = finalTexts.map((t, i) =>
@@ -769,7 +769,6 @@ Schreibe fließend und natürlich — kein mechanisches Auflisten, keine Fragmen
         if (synthResponse.ok) {
             const synthData = await synthResponse.json();
             synthesisText = synthData.content[0].text.trim();
-            addLog('SYS', 'Synthese abgeschlossen.');
             } else {
             synthesisText = '';
         }
