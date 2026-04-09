@@ -791,6 +791,16 @@ Schreibe fließend und natürlich — kein mechanisches Auflisten, keine Fragmen
 
     protocol.final = finalParsed;
     
+     // Ergebnis anzeigen
+    document.getElementById('resultAnswer').textContent = finalParsed.answer || '—';
+    document.getElementById('resultDis').textContent = finalParsed.dissonances || '—';
+    document.getElementById('resultWhy').textContent = finalParsed.reasoning || '—';
+    document.getElementById('resultSection').classList.add('visible');
+    document.getElementById('pulseIndicator').style.animationPlayState = 'paused';
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('progressStatus').textContent = 'Abgeschlossen ✓';
+}
+    
 // ── KONTEXT ──
 function buildContext(question, roundTexts, currentRound, currentModel) {
     let content = `Die Frage lautet: ${question}\n\n`;
