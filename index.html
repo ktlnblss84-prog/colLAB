@@ -505,18 +505,20 @@ const SYSTEM_INTERNAL = (model) => `Du bist Modell ${model} und nimmst an einer 
 
 Lies die Frage und alle bisherigen Beiträge sorgfältig. Widersprich wenn du anderer Meinung bist — höfliche Zustimmung ohne echte Prüfung schadet dem Ergebnis.
 
-PASS und FERTIG sind gleichwertige, völlig legitime Antworten:
+PASS und FERTIG sind legitime Antworten — aber mit klarer Unterscheidung:
 PASS — ich habe in dieser Runde nichts Neues beizutragen, werde aber in der nächsten Runde wieder aufgerufen.
-FERTIG — die Aufgabe ist aus meiner Sicht vollständig gelöst. Bei FERTIG wirst du bis zur Konsolidierungsrunde (Runde 8) nicht mehr aufgerufen — dort bist du wieder dabei.
+FERTIG — NUR wenn die Frage eindeutig und vollständig beantwortet ist (z.B. bei mathematischen oder logischen Aufgaben mit einer klaren Lösung). Bei offenen philosophischen, ethischen oder kreativen Fragen, besonders wenn die Diskussion noch aktiv läuft und andere Modelle widersprechen, ist FERTIG unangemessen — verwende dann PASS. FERTIG bedeutet: du wirst bis zur Konsolidierungsrunde (Runde 8) nicht mehr aufgerufen.
 
 Antworte präzise und ohne Ausschweifungen.`;
 
-const SYSTEM_FINAL = `Dies ist die letzte Runde. Erstellt gemeinsam die finale Antwort für den Benutzer in folgender Struktur:
+const SYSTEM_FINAL = `Dies ist die letzte Runde. Jedes Modell erstellt seine eigene strukturierte Antwort. Die finale Ausgabe wird per Mehrheitsentscheid ermittelt.
 
-ANTWORT: Die gemeinsame beste Lösung. Bei kreativen Aufgaben ohne verwässernde Kompromisse, bei analytischen klar und präzise.
-DISSONANZEN: Was ungeklärt oder umstritten blieb — und warum.
-BEGRÜNDUNG: Warum wurde genau diese Antwort gewählt — welche Argumente haben den Ausschlag gegeben.`;
+Strukturiere deine Antwort so:
 
+ANTWORT: Deine Position klar und präzise — bei kreativen Aufgaben ohne Kompromisse, bei analytischen eindeutig.
+DISSONANZEN: Was in der Diskussion ungeklärt oder umstritten blieb — und warum. Bei Meinungsunterschieden zwischen den Modellen: benenne diese ausführlich und erkläre die verschiedenen Positionen.
+BEGRÜNDUNG: Warum du zu dieser Antwort gekommen bist — welche Argumente den Ausschlag gegeben haben.`;
+    
 // ── SETUP ──
 function loadKeys() {
     keys.A = localStorage.getItem('colLab_keyA') || '';
@@ -611,7 +613,7 @@ async function callGPT(messages, isConsolidation) {
             'Authorization': `Bearer ${keys.B}`
         },
         body: JSON.stringify({
-            model: 'gpt-4o',
+            model: 'gpt-5.4-mini',
             max_tokens: 2000,
             messages: [{ role: 'system', content: systemPrompt }, ...messages]
         })
@@ -623,10 +625,12 @@ async function callGPT(messages, isConsolidation) {
 
 async function callGemini(messages, isConsolidation) {
     const systemPrompt = isConsolidation ? SYSTEM_FINAL : SYSTEM_INTERNAL('C');
+    // Gemini erwartet ein anderes Format
     const contents = messages.map(m => ({
         role: m.role === 'assistant' ? 'model' : 'user',
         parts: [{ text: m.content }]
     }));
+
     const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${keys.C}`,
         {
@@ -635,10 +639,17 @@ async function callGemini(messages, isConsolidation) {
             body: JSON.stringify({
                 system_instruction: { parts: [{ text: systemPrompt }] },
                 contents: contents,
-                generationConfig: { maxOutputTokens: 2000 }
+                generationConfig: { maxOutputTokens: 3000 },
+                safetySettings: [
+          { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+                      ]
             })
         }
     );
+    
     if (!response.ok) throw new Error(`Gemini: ${response.status} ${await response.text()}`);
     const data = await response.json();
     return data.candidates[0].content.parts.map(p => p.text || '').join('');
@@ -715,18 +726,68 @@ async function startColLAB() {
     updateRoundIndicator(8, 'done');
     stopThinking();
 
-    // Beste Antwort parsen — erste nicht-leere
-    const finalText = finalTexts.find(t => t.length > 10) || '';
-    const parsed = parseFinalAnswer(finalText);
+     // ── SYNTHESE durch Haiku ──
+    addLog('SYS', 'Synthese wird erstellt…');
+    document.getElementById('progressStatus').textContent = 'Synthese läuft…';
 
-    document.getElementById('resultAnswer').textContent = parsed.answer || finalText;
-    document.getElementById('resultDis').textContent = parsed.dissonances || '—';
-    document.getElementById('resultWhy').textContent = parsed.reasoning || '—';
-    document.getElementById('resultSection').classList.add('visible');
-    document.getElementById('startBtn').disabled = false;
-    document.getElementById('progressStatus').textContent = 'Abgeschlossen ✓';
-}
+    const synthesisInput = finalRecordContributions.map(c =>
+        `Modell ${c.model}:\n${c.text}`
+    ).join('\n\n---\n\n');
 
+    const SYSTEM_SYNTHESIZER = `Du bist ein neutraler Synthesizer. Du erhältst die Konsolidierungsantworten von drei KI-Modellen (A, B, C) zu einer gemeinsamen Frage. Deine Aufgabe ist es, daraus eine klare, natürlich formulierte Gesamtantwort zu destillieren.
+
+Strukturiere deine Antwort exakt so:
+
+ANTWORT: Die beste gemeinsame Antwort auf die ursprüngliche Frage — präzise, vollständig, ohne Fragmentierung. Bei Einigkeit: eine klare gemeinsame Position. Bei Mehrheit: die Mehrheitsposition vollständig formuliert. Bei echter Uneinigkeit: alle Positionen fair dargestellt.
+
+DISSONANZEN: Wo und warum die Modelle voneinander abwichen — konkret und nachvollziehbar. Falls alle einig waren, kurz notieren.
+
+BEGRÜNDUNG: Welche Argumente den Ausschlag gegeben haben und warum diese Synthese so gewählt wurde.
+
+Schreibe fließend und natürlich — kein mechanisches Auflisten, keine Fragmente.`;
+
+    let synthesisText = '';
+    try {
+        const synthResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': keys.A,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+                model: 'claude-haiku-4-5-20251001',
+                max_tokens: 2000,
+                system: SYSTEM_SYNTHESIZER,
+                messages: [{ role: 'user', content: `Die ursprüngliche Frage lautete: ${question}\n\nHier sind die drei Konsolidierungsantworten:\n\n${synthesisInput}` }]
+            })
+        });
+        if (synthResponse.ok) {
+            const synthData = await synthResponse.json();
+            synthesisText = synthData.content[0].text.trim();
+            addLog('SYS', 'Synthese abgeschlossen.');
+            } else {
+            synthesisText = '';
+        }
+    } catch (err) {
+        synthesisText = '';
+    }
+
+    // Synthese parsen oder klare Fehlermeldung
+    let finalParsed;
+    if (synthesisText) {
+        finalParsed = parseFinalAnswer(synthesisText);
+    } else {
+        finalParsed = {
+            answer: '⚠ Synthese fehlgeschlagen — Haiku-Call hat nicht funktioniert.',
+            dissonances: '—',
+            reasoning: '—'
+        };
+    }
+
+    protocol.final = finalParsed;
+    
 // ── KONTEXT ──
 function buildContext(question, roundTexts, currentRound, currentModel) {
     let content = `Die Frage lautet: ${question}\n\n`;
