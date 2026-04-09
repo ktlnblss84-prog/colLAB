@@ -500,6 +500,7 @@
 <script>
 // ── STATE ──
 let keys = { A: '', B: '', C: '' };
+let protocol = { question: '', rounds: [], final: { answer: '', dissonances: '', reasoning: '' } };
 
 const SYSTEM_INTERNAL = (model) => `Du bist Modell ${model} und nimmst an einer internen Problemlösungsrunde teil. Die anderen Teilnehmer sind ebenfalls KI-Modelle — Modell A, Modell B und Modell C. Eine Frage wurde von einem Benutzer gestellt. Deine Antworten sind für den Benutzer nicht sichtbar. Ihr habt insgesamt 8 Runden — teile deine Ressourcen und Argumentation entsprechend ein.
 
@@ -529,7 +530,9 @@ function loadKeys() {
         document.getElementById('keyB').value = keys.B;
         document.getElementById('keyC').value = keys.C;
     }
-    if (keys.A && keys.B && keys.C) hideOverlay();
+    if (keys.A && keys.B && keys.C) {
+        hideOverlay();
+    }
 }
 
 function saveKeys() {
