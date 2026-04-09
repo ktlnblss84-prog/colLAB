@@ -733,9 +733,9 @@ async function startColLAB() {
     addLog('SYS', 'Synthese wird erstellt…');
     document.getElementById('progressStatus').textContent = 'Synthese läuft…';
 
-    const synthesisInput = finalRecordContributions.map(c =>
-        `Modell ${c.model}:\n${c.text}`
-    ).join('\n\n---\n\n');
+    const synthesisInput = finalTexts.map((t, i) =>
+    `Modell ${['A','B','C'][i]}:\n${t}`
+).join('\n\n---\n\n');
 
     const SYSTEM_SYNTHESIZER = `Du bist ein neutraler Synthesizer. Du erhältst die Konsolidierungsantworten von drei KI-Modellen (A, B, C) zu einer gemeinsamen Frage. Deine Aufgabe ist es, daraus eine klare, natürlich formulierte Gesamtantwort zu destillieren.
 
